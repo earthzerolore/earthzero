@@ -2428,6 +2428,161 @@ body.app-loading{
   .virus-warning-btn{width:100%;}
 }
 
+
+.image-lightbox-overlay{
+  position:fixed;
+  inset:0;
+  z-index:320;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:32px;
+  background:rgba(6,4,4,.78);
+  backdrop-filter:blur(6px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .24s ease;
+}
+.image-lightbox-overlay.active{
+  opacity:1;
+  pointer-events:auto;
+}
+.image-lightbox-window{
+  position:relative;
+  width:min(92vw, 1400px);
+  height:min(88vh, 900px);
+  max-width:92vw;
+  max-height:88vh;
+  background:linear-gradient(180deg, rgba(16,12,11,.98), rgba(11,8,8,.99));
+  border:1px solid var(--line);
+  box-shadow:0 34px 80px rgba(0,0,0,.55);
+  overflow:hidden;
+  transition:width .22s ease, height .22s ease;
+}
+.image-lightbox-window::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent, transparent 4px, rgba(255,255,255,.018) 4px, rgba(255,255,255,.018) 5px);
+}
+.image-lightbox-head{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 16px;
+  border-bottom:1px solid var(--line);
+  background:rgba(20,17,14,.94);
+}
+.image-lightbox-meta{min-width:0;}
+.image-lightbox-kicker{
+  font-family:var(--mono);
+  font-size:8px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--red);
+  margin-bottom:6px;
+}
+.image-lightbox-title{
+  font-family:var(--display);
+  font-size:24px;
+  line-height:1;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--bone);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:min(54vw, 760px);
+}
+.image-lightbox-controls{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-shrink:0;
+}
+.image-lightbox-btn{
+  min-width:36px;
+  height:36px;
+  border:1px solid var(--line);
+  background:rgba(20,17,14,.92);
+  color:var(--bone);
+  font-family:var(--display);
+  font-size:18px;
+  letter-spacing:.08em;
+  cursor:pointer;
+  transition:transform .18s ease, border-color .18s ease, background .18s ease;
+  padding:0 10px;
+}
+.image-lightbox-btn:hover{
+  transform:translateY(-1px);
+  border-color:var(--red);
+  background:var(--bg3);
+}
+.image-lightbox-stage{
+  position:relative;
+  height:calc(100% - 67px);
+  overflow:hidden;
+  background:radial-gradient(circle at center, rgba(107,42,34,.09), rgba(10,8,7,.96) 65%);
+  cursor:grab;
+}
+.image-lightbox-stage.dragging{cursor:grabbing;}
+.image-lightbox-stage::before,
+.image-lightbox-stage::after{content:'';position:absolute;width:12px;height:12px;border-style:solid;border-color:var(--red);pointer-events:none;z-index:1}
+.image-lightbox-stage::before{top:14px;left:14px;border-width:1px 0 0 1px}
+.image-lightbox-stage::after{bottom:14px;right:14px;border-width:0 1px 1px 0}
+.image-lightbox-canvas{
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  transform-origin:center center;
+  will-change:transform;
+}
+.image-lightbox-img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  max-width:none;
+  max-height:none;
+  object-fit:contain;
+  object-position:center center;
+  user-select:none;
+  -webkit-user-drag:none;
+  display:block;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);
+}
+.image-lightbox-hint{
+  position:absolute;
+  left:18px;
+  bottom:16px;
+  z-index:2;
+  font-family:var(--mono);
+  font-size:8px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--bone2);
+  background:rgba(13,11,9,.82);
+  border:1px solid var(--line);
+  padding:6px 8px 5px;
+}
+img:not(.selector-thumb):not(.profile-empty-state img){cursor:default;}
+@media (max-width: 720px){
+  .image-lightbox-overlay{padding:14px;}
+  .image-lightbox-window{width:100%;height:auto;max-height:90vh;}
+  .image-lightbox-head{padding:12px;align-items:flex-start;flex-direction:column;}
+  .image-lightbox-title{max-width:100%;font-size:20px;}
+  .image-lightbox-controls{width:100%;justify-content:flex-end;}
+  .image-lightbox-stage{height:calc(100% - 109px);}
+  .image-lightbox-hint{left:12px;right:12px;bottom:12px;}
+}
+
 </style>
 </head>
 <body>
@@ -4092,5 +4247,200 @@ window.addEventListener('resize', () => {
   applySelectorGridLayout();
 });
 </script>
+<div class="image-lightbox-overlay" id="image-lightbox" aria-hidden="true">
+  <div class="image-lightbox-window frame-box" role="dialog" aria-modal="true" aria-labelledby="image-lightbox-title">
+    <div class="fb-corners"></div>
+    <div class="image-lightbox-head">
+      <div class="image-lightbox-meta">
+        <div class="image-lightbox-kicker">// Archive image inspection</div>
+        <div class="image-lightbox-title" id="image-lightbox-title">Image Viewer</div>
+      </div>
+      <div class="image-lightbox-controls">
+        <button class="image-lightbox-btn" id="image-lightbox-zoom-out" aria-label="Zoom out">−</button>
+        <button class="image-lightbox-btn" id="image-lightbox-reset" aria-label="Reset view">Reset</button>
+        <button class="image-lightbox-btn" id="image-lightbox-zoom-in" aria-label="Zoom in">+</button>
+        <button class="image-lightbox-btn" id="image-lightbox-close" aria-label="Close viewer">×</button>
+      </div>
+    </div>
+    <div class="image-lightbox-stage" id="image-lightbox-stage">
+      <div class="image-lightbox-canvas" id="image-lightbox-canvas">
+        <img class="image-lightbox-img" id="image-lightbox-img" alt="">
+      </div>
+      <div class="image-lightbox-hint">Drag to pan. Use the controls to zoom.</div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function(){
+  const overlay = document.getElementById('image-lightbox');
+  const windowEl = document.querySelector('.image-lightbox-window');
+  const stage = document.getElementById('image-lightbox-stage');
+  const canvas = document.getElementById('image-lightbox-canvas');
+  const img = document.getElementById('image-lightbox-img');
+  const title = document.getElementById('image-lightbox-title');
+  const zoomInBtn = document.getElementById('image-lightbox-zoom-in');
+  const zoomOutBtn = document.getElementById('image-lightbox-zoom-out');
+  const resetBtn = document.getElementById('image-lightbox-reset');
+  const closeBtn = document.getElementById('image-lightbox-close');
+  if(!overlay || !stage || !canvas || !img) return;
+
+  const state = { scale:1, minScale:1, maxScale:4, x:0, y:0, dragging:false, startX:0, startY:0, open:false };
+
+  function clamp(v,min,max){ return Math.min(max, Math.max(min, v)); }
+
+  function getScaledBounds(){
+    const sw = stage.clientWidth || 1;
+    const sh = stage.clientHeight || 1;
+    const scaledW = sw * state.scale;
+    const scaledH = sh * state.scale;
+    const overflowX = Math.max(0, (scaledW - sw) / 2);
+    const overflowY = Math.max(0, (scaledH - sh) / 2);
+    return { overflowX, overflowY };
+  }
+
+  function contain(){
+    const { overflowX, overflowY } = getScaledBounds();
+    state.x = clamp(state.x, -overflowX, overflowX);
+    state.y = clamp(state.y, -overflowY, overflowY);
+  }
+
+  function apply(){
+    contain();
+    canvas.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+  }
+
+  function sizeWindowToImage(){
+    if(!windowEl) return;
+    const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+    const maxW = Math.floor(vw * 0.92);
+    const maxH = Math.floor(vh * 0.88);
+    const head = windowEl.querySelector('.image-lightbox-head');
+    const headH = head ? head.offsetHeight : 68;
+    const iw = img.naturalWidth || 1200;
+    const ih = img.naturalHeight || 800;
+    const stageMaxW = Math.max(320, maxW);
+    const stageMaxH = Math.max(220, maxH - headH);
+    const ratio = iw / Math.max(ih, 1);
+    let stageW = stageMaxW;
+    let stageH = Math.round(stageW / ratio);
+    if(stageH > stageMaxH){
+      stageH = stageMaxH;
+      stageW = Math.round(stageH * ratio);
+    }
+    stageW = Math.max(320, Math.min(stageW, stageMaxW));
+    stageH = Math.max(220, Math.min(stageH, stageMaxH));
+    windowEl.style.width = `${stageW}px`;
+    windowEl.style.height = `${stageH + headH}px`;
+  }
+
+  function resetView(){
+    sizeWindowToImage();
+    state.minScale = 1;
+    state.scale = 1;
+    state.maxScale = 4;
+    state.x = 0;
+    state.y = 0;
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    apply();
+  }
+
+  function zoomBy(delta){
+    const nextScale = clamp(Number((state.scale + delta).toFixed(3)), state.minScale, state.maxScale);
+    if(nextScale === state.scale) return;
+    state.scale = nextScale;
+    apply();
+  }
+
+  function openViewer(source){
+    const src = source.currentSrc || source.src;
+    if(!src) return;
+    state.dragging = false;
+    stage.classList.remove('dragging');
+    title.textContent = source.alt || source.getAttribute('data-viewer-title') || 'Image Viewer';
+    img.alt = source.alt || 'Archive image';
+    img.onload = () => requestAnimationFrame(resetView);
+    img.src = src;
+    overlay.classList.add('active');
+    overlay.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+    state.open = true;
+    if(img.complete) requestAnimationFrame(resetView);
+  }
+
+  function closeViewer(){
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+    state.open = false;
+    state.dragging = false;
+    stage.classList.remove('dragging');
+  }
+
+  function isExcluded(el){
+    return !!el.closest('.selector-card, .selector-stage, .nav-logo, .hero-title, .map-marker, .map-info-view, .image-lightbox-overlay, .profile-empty-state');
+  }
+
+  function isViewableImage(el){
+    return el instanceof HTMLImageElement && !!el.src && !isExcluded(el) && !el.classList.contains('selector-thumb');
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target instanceof Element ? e.target.closest('img') : null;
+    if(!target || !isViewableImage(target)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openViewer(target);
+  }, true);
+
+  zoomInBtn?.addEventListener('click', () => zoomBy(0.2));
+  zoomOutBtn?.addEventListener('click', () => zoomBy(-0.2));
+  resetBtn?.addEventListener('click', resetView);
+  closeBtn?.addEventListener('click', closeViewer);
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) closeViewer(); });
+
+  window.addEventListener('keydown', (e) => {
+    if(!state.open) return;
+    if(e.key === 'Escape') closeViewer();
+    if(e.key === '+' || e.key === '=') zoomBy(0.2);
+    if(e.key === '-') zoomBy(-0.2);
+  });
+
+  stage.addEventListener('mousedown', (e) => {
+    if(!state.open || state.scale <= 1) return;
+    e.preventDefault();
+    state.dragging = true;
+    state.startX = e.clientX - state.x;
+    state.startY = e.clientY - state.y;
+    stage.classList.add('dragging');
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if(!state.open || !state.dragging) return;
+    state.x = e.clientX - state.startX;
+    state.y = e.clientY - state.startY;
+    apply();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if(!state.dragging) return;
+    state.dragging = false;
+    stage.classList.remove('dragging');
+  });
+
+  stage.addEventListener('wheel', (e) => {
+    if(!state.open) return;
+    e.preventDefault();
+    zoomBy(e.deltaY < 0 ? 0.16 : -0.16);
+  }, { passive:false });
+
+  stage.addEventListener('dragstart', (e) => e.preventDefault());
+  window.addEventListener('resize', () => { if(state.open) resetView(); });
+})();
+</script>
+
 </body>
 </html>
